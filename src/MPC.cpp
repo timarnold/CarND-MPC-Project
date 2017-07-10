@@ -7,6 +7,18 @@
 
 using CppAD::AD;
 
+// The product of the N and dt values serve as the time horizon of our
+// model predictive control optimizer. We need to trade off performance versus
+// achieving enough of a prediction into the future to have a reasonable chance
+// of approximating the future trajectory of the vehicle.
+//
+// This time horizon should be on order ~a few seconds --- our current value is
+// ~1 second. In addition to performance considerations, we need not calculate
+// too far into the future because an estimated trajectory far into the future
+// is more likely to be incorrect by the time we arrive at that location anyway.
+//
+// We tried other values for this, including ~20 or so for N and smaller values
+// for dt, but this combination of values seemed to produce ideal driving behavior.
 size_t N = 10;
 double dt = 0.1;
 
@@ -122,6 +134,12 @@ class FG_eval {
       // v_[t+1] = v[t] + a[t] * dt
       // cte[t+1] = f(x[t]) - y[t] + v[t] * sin(epsi[t]) * dt
       // epsi[t+1] = psi[t] - psides[t] + v[t] * delta[t] / Lf * dt
+      //
+      // These constraints come from our equation of motion, which defines how
+      // the vehicle's future trajectory is estimated based on its actuator
+      // (steering angle and throttle) values. The equations of motion are just
+      // simple physics mechanics equations.
+      //
       fg[1 + x_start + t] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
       fg[1 + y_start + t] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
       fg[1 + psi_start + t] = psi1 - (psi0 + v0 * delta0 / Lf * dt);
